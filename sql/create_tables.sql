@@ -19,7 +19,7 @@ CREATE TABLE roms (
     id INTEGER PRIMARY KEY,
     serial_id TEXT,
     name TEXT,
-    md5 TEXT
+    crc INTEGER
 );
 CREATE TABLE developers (
     id INTEGER PRIMARY KEY,

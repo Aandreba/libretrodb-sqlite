@@ -6,11 +6,11 @@
 In some cases, client applications may find a SQLite database easier to consume than the Libretro `.rdb` files. This project provides
 the same content* from the Libretro RetroArch database in a single SQLite database file.
 
-\* *Some data is excluded, such as the filesize of the ROM, and all checksums except for MD5*
+\* *Some data is excluded, such as the filesize of the ROM, and all checksums except for crc*
 
-***Important note:*** The conversion tool here also does some basic deconfliction when there are multiple records for the same ROM MD5 checksum.
+***Important note:*** The conversion tool here also does some basic deconfliction when there are multiple records for the same ROM crc checksum.
 The underlying assumption is that if two ROMs have the same checksum, they're the same, and the metadata should be merged in favor of non-null
-values. The primary use-case is for client applications to be able to query the database by MD5 checksum of a ROM file, so keep in mind that 
+values. The primary use-case is for client applications to be able to query the database by crc checksum of a ROM file, so keep in mind that
 this mindset informed the database schema and how the utility decides which data is duplicated.
 
 ## Usage
@@ -59,7 +59,7 @@ build/libretrodb.sqlite.tgz
 | id | INTEGER PRIMARY KEY |
 | serial_id | TEXT |
 | name | TEXT |
-| md5 | TEXT |
+| crc | TEXT |
 
 ### `developers`
 
@@ -119,7 +119,7 @@ build/libretrodb.sqlite.tgz
 
 ## Sample Query
 
-Sample query for data based on a ROM file with the MD5 hash of `27F322F5CD535297AB21BC4A41CBFC12`:
+Sample query for data based on a ROM file with the crc hash of `27F322F5CD535297AB21BC4A41CBFC12`:
 
 ```sql
 SELECT games.serial_id,
@@ -129,12 +129,12 @@ SELECT games.serial_id,
 	games.users,
 	developers.name as developer_name,
 	publishers.name as publisher_name,
-	ratings.name as rating_name,	
+	ratings.name as rating_name,
 	franchises.name as franchise_name,
 	regions.name as region_name,
 	genres.name as genre_name,
 	roms.name as rom_name,
-	roms.md5 as rom_md5,
+	roms.crc as rom_crc,
 	platforms.name as platform_name,
 	manufacturers.name as manufacturer_name
 FROM games
@@ -147,12 +147,12 @@ FROM games
 		LEFT JOIN manufacturers ON platforms.manufacturer_id = manufacturers.id
 	LEFT JOIN regions ON games.region_id = regions.id
 	INNER JOIN roms ON games.serial_id = roms.serial_id
-WHERE roms.md5 = "27F322F5CD535297AB21BC4A41CBFC12";
+WHERE roms.crc = "27F322F5CD535297AB21BC4A41CBFC12";
 ```
 
 Output:
 
-| serial_id | release_year | release_month | display_name | developer_name | franchise_name | region_name | genre_name | rom_name | rom_md5 | platform_name | manufacturer_name |
+| serial_id | release_year | release_month | display_name | developer_name | franchise_name | region_name | genre_name | rom_name | rom_crc | platform_name | manufacturer_name |
 | --------- | ------------ | ------------- | ------------ | -------------- | -------------- | ----------- | ---------- | -------- | ------- | ------------- | ----------------- |
 | 41575245 | 2001 | 9 | Advance Wars | Intelligent Systems | Advance Wars | USA | Strategy | Advance Wars (USA).gba | 27F322F5CD535297AB21BC4A41CBFC12 | Game Boy Advance | Nintendo |
 

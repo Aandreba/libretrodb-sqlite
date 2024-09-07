@@ -34,11 +34,11 @@ class Platform:
 
 class ROM:
 
-    def __init__(self, serial, name, md5):
+    def __init__(self, serial, name, crc):
         self.id = None
         self.serial = serial
         self.name = name
-        self.md5 = md5
+        self.crc = crc
 
 class Game:
 
@@ -147,7 +147,7 @@ class Converter:
             self.logger.error("{} not found".format(libretrodb_tool))
             exit(1)
         return libretrodb_tool
-    
+
     """
     Reads the content of a SQL file as a string.
     """
@@ -168,7 +168,7 @@ class Converter:
                 continue
             self._parse_platform_file(os.path.join(self.rdb_dir, file))
             # break # TODO: Remove this
-        
+
         # Open the database connection
         connection = sqlite3.connect(self.output_file)
         cursor = connection.cursor()
@@ -204,7 +204,7 @@ class Converter:
         system_fullname = Path(rdb_file).stem
         manufacturer_name = system_fullname.split(" - ")[0] if system_fullname.find(" - ") != -1 else None
         platform_name = system_fullname[system_fullname.find(" - ") + len(" - "):] if system_fullname.find(" - ") != -1 else system_fullname
-        
+
         # Save the manufacturer name and generate an ID
         if manufacturer_name is not None and manufacturer_name not in self.manufacturers:
             self.manufacturers[manufacturer_name] = len(self.manufacturers) + 1
@@ -239,7 +239,8 @@ class Converter:
 
         # Extract the fields from the JSON
         serial = self._get_json_value(json_obj, 'serial')
-        md5 = self._get_json_value(json_obj, 'md5')
+        crc = self._get_json_value(json_obj, 'crc')
+        crc = int(crc, 16) if crc is not None else None
         developer = self._get_json_value(json_obj, 'developer')
         publisher = self._get_json_value(json_obj, 'publisher')
         rating = self._get_json_value(json_obj, 'esrb_rating')
@@ -253,7 +254,7 @@ class Converter:
         genre = self._get_json_value(json_obj, 'genre')
         # description = self._get_json_value(json_obj, 'description') # This field in the dataset doesn't currently provide any added value
         full_name = self._get_json_value(json_obj, 'name')
-        
+
         # Build the display name from the full name, but ignore all the trailing parenthesis-wrapped meta-tags
         if full_name is None:
             display_name = None
@@ -282,7 +283,7 @@ class Converter:
         genre_id = self.genres[genre] if genre is not None else None
 
         # Build the ROM and Game objects. Note that ROMs and games should be 1:1.
-        rom = ROM(serial, rom_name, md5)
+        rom = ROM(serial, rom_name, crc)
         rom_id = len(self.roms) + 1
         rom.id = rom_id
         self.roms[rom_id] = rom
@@ -294,7 +295,7 @@ class Converter:
             id = len(self.games) + 1
             game.id = id
             self.games[serial] = game
-    
+
     """
     Insert the manufacturers into the database.
     """
@@ -303,7 +304,7 @@ class Converter:
             (id, name) = (value, key)
             cursor.execute(self._load_sql("./sql/insert_manufacturer.sql"), (id, name))
         self.logger.success("Inserted {} manufacturers into database".format(len(self.manufacturers)))
-    
+
     """
     Insert the platforms into the database.
     """
@@ -329,7 +330,7 @@ class Converter:
             (id, name) = (value, key)
             cursor.execute(self._load_sql("./sql/insert_publisher.sql"), (id, name))
         self.logger.success("Inserted {} publishers into database".format(len(self.publishers)))
-    
+
     """
     Insert the ratings into the database.
     """
@@ -373,7 +374,7 @@ class Converter:
         for key,value in self.games.items():
             game = value
             cursor.execute(self._load_sql("./sql/insert_game.sql"), (
-                game.id, 
+                game.id,
                 game.serial,
                 game.developer_id,
                 game.publisher_id,
@@ -395,7 +396,7 @@ class Converter:
     def _insert_roms(self, cursor):
         for key,value in self.roms.items():
             rom = value
-            cursor.execute(self._load_sql("./sql/insert_rom.sql"), (rom.id, rom.serial, rom.name, rom.md5))
+            cursor.execute(self._load_sql("./sql/insert_rom.sql"), (rom.id, rom.serial, rom.name, rom.crc))
         self.logger.success("Inserted {} ROMs into database".format(len(self.roms)))
 
     def _get_json_value(self, json_obj, key):
